@@ -1,0 +1,106 @@
+name: ScreenBrush
+options:
+  bundleIdPrefix: io.paintscreen
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: 64XU96GS3U
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  BrushKit:
+    path: BrushKit
+targets:
+  ScreenBrush:
+    type: application
+    platform: macOS
+    sources:
+      - path: ScreenBrush
+    dependencies:
+      - package: BrushKit
+    settings:
+      base:
+        PRODUCT_NAME: Glasspen Meet
+        PRODUCT_BUNDLE_IDENTIFIER: io.paintscreen.ScreenBrush
+        CODE_SIGN_IDENTITY: "Apple Development"
+        ENABLE_HARDENED_RUNTIME: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+    info:
+      path: ScreenBrush/Info.plist
+      properties:
+        CFBundleDisplayName: Glasspen Meet
+        CFBundleName: Glasspen Meet
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.productivity
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: ""
+        NSLocalNetworkUsageDescription: Glasspen Meet talks to the Glasspen Remote app on your iPhone or iPad over your local network.
+        NSBonjourServices:
+          - _paintscreen._tcp
+  ScreenBrushRemote:
+    type: application
+    platform: iOS
+    sources:
+      - path: ScreenBrushRemote
+    dependencies:
+      - package: BrushKit
+    settings:
+      base:
+        PRODUCT_NAME: ScreenBrushRemote
+        PRODUCT_BUNDLE_IDENTIFIER: io.paintscreen.ScreenBrushRemote
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    info:
+      path: ScreenBrushRemote/Info.plist
+      properties:
+        CFBundleDisplayName: Glasspen Remote
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSLocalNetworkUsageDescription: Glasspen Remote finds and connects to Glasspen Meet on your Mac over your local network.
+        NSBonjourServices:
+          - _paintscreen._tcp
+        NSCameraUsageDescription: The camera is used to scan the pairing QR code shown by Glasspen Meet on your Mac.
+        CFBundleURLTypes:
+          - CFBundleURLName: io.paintscreen.pair
+            CFBundleURLSchemes:
+              - paintscreen
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: true
+schemes:
+  ScreenBrush:
+    build:
+      targets:
+        ScreenBrush: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  ScreenBrushRemote:
+    build:
+      targets:
+        ScreenBrushRemote: all
+    run:
+      config: Debug

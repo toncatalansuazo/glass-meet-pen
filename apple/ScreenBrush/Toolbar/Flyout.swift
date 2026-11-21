@@ -169,7 +169,7 @@ struct FlyoutView: View {
                                 in: RoundedRectangle(cornerRadius: 8))
                     .contentShape(Rectangle())
                 }
-                .hoverTip("\(tool.displayName) (\(String(tool.shortcutKey).uppercased()))")
+                .hoverTip(tool.shortcutHelp)
             }
         }
         .fixedSize()

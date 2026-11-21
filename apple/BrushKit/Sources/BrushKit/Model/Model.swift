@@ -10,7 +10,7 @@ public struct SourceID: Hashable, Codable, Sendable, CustomStringConvertible {
 }
 
 public enum Tool: String, Codable, CaseIterable, Sendable {
-    case pen, highlighter, line, arrow, rectangle, ellipse, phone, person, eraser
+    case pen, highlighter, line, arrow, rectangle, ellipse, phone, person, text, eraser
 
     /// Shapes are defined by two points (start, end) instead of a freehand path.
     public var isShape: Bool {
@@ -22,6 +22,19 @@ public enum Tool: String, Codable, CaseIterable, Sendable {
 
     /// Figures are pictograms drawn inside the box spanned by start and end.
     public var isFigure: Bool { self == .phone || self == .person }
+
+    /// Typed text, placed with a click; the stroke's `text` holds it.
+    public var isText: Bool { self == .text }
+
+    /// The number key of the global ⌃⌥1…⌃⌥0 shortcut, in toolbar order (the 10th tool is 0).
+    /// There are only ten number keys, so a tool added later needs another shortcut.
+    public var shortcutDigit: Int { ((Tool.allCases.firstIndex(of: self) ?? 0) + 1) % 10 }
+
+    /// Global shortcut, e.g. "⌃⌥1".
+    public var globalShortcut: String { "⌃⌥\(shortcutDigit)" }
+
+    /// Tools the phone offers (typing text needs the Mac's keyboard).
+    public static var phoneTools: [Tool] { allCases.filter { !$0.isText } }
 
     /// Natural width/height of a figure; Shift keeps it while dragging.
     public var figureAspect: Float? {
@@ -42,6 +55,7 @@ public enum Tool: String, Codable, CaseIterable, Sendable {
         case .ellipse: return "Ellipse"
         case .phone: return "Phone"
         case .person: return "Person"
+        case .text: return "Text"
         case .eraser: return "Eraser"
         }
     }
@@ -56,6 +70,7 @@ public enum Tool: String, Codable, CaseIterable, Sendable {
         case .ellipse: return "circle"
         case .phone: return "iphone"
         case .person: return "figure.stand"
+        case .text: return "textformat"
         case .eraser: return "eraser"
         }
     }
@@ -71,6 +86,7 @@ public enum Tool: String, Codable, CaseIterable, Sendable {
         case .ellipse: return "o"
         case .phone: return "i"
         case .person: return "f"
+        case .text: return "t"
         case .eraser: return "e"
         }
     }
@@ -148,16 +164,19 @@ public struct Stroke: Hashable, Codable, Sendable, Identifiable {
     /// Width as a fraction of display width.
     public let width: Float
     /// For freehand tools: the sampled path. For shapes: exactly [start, end].
+    /// For text: [top-left, bottom-right] of the text's box.
     public var points: [StrokePoint]
+    /// The typed text, for the `text` tool only.
+    public let text: String?
     /// Monotonic order assigned when the stroke is committed; used to keep
     /// z-order stable across undo/redo and network sync.
     public var seq: UInt64
     public var createdAt: Date
 
     public init(id: UUID = UUID(), sourceID: SourceID, tool: Tool, color: RGBAColor, width: Float,
-                points: [StrokePoint], seq: UInt64 = 0, createdAt: Date = Date()) {
+                points: [StrokePoint], seq: UInt64 = 0, createdAt: Date = Date(), text: String? = nil) {
         self.id = id; self.sourceID = sourceID; self.tool = tool; self.color = color
-        self.width = width; self.points = points; self.seq = seq; self.createdAt = createdAt
+        self.width = width; self.points = points; self.seq = seq; self.createdAt = createdAt; self.text = text
     }
 
     /// Color alpha is the ink opacity; highlighters are always at most 35% of it.

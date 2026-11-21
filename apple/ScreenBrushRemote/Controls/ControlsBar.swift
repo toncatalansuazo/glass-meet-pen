@@ -53,7 +53,7 @@ struct ControlsBar: View {
     private var toolMenu: some View {
         Menu {
             Picker("Tool", selection: $model.toolState.tool) {
-                ForEach(Tool.allCases, id: \.self) { tool in
+                ForEach(Tool.phoneTools, id: \.self) { tool in
                     Label(tool.displayName, systemImage: tool.symbolName).tag(tool)
                 }
             }

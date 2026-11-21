@@ -86,8 +86,8 @@ public enum Geometry {
         let segments: [(SIMD2<Float>, SIMD2<Float>)]
         let pts = stroke.points
         switch stroke.tool {
-        case .phone where pts.count >= 2, .person where pts.count >= 2:
-            // Figures are erased by touching anywhere inside their box.
+        case .phone where pts.count >= 2, .person where pts.count >= 2, .text where pts.count >= 2:
+            // Figures and text are erased by touching anywhere inside their box.
             let a = m(pts[0]), b = m(pts[1])
             return q.x >= min(a.x, b.x) - tol && q.x <= max(a.x, b.x) + tol
                 && q.y >= min(a.y, b.y) - tol && q.y <= max(a.y, b.y) + tol

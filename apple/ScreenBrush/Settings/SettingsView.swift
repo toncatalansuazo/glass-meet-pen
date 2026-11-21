@@ -1,3 +1,4 @@
+import BrushKit
 import AppKit
 import SwiftUI
 
@@ -31,7 +32,10 @@ struct SettingsView: View {
             Section("Shortcuts") {
                 LabeledContent("Toggle drawing") { HotKeyRecorder(combo: $settings.drawHotKey) }
                 LabeledContent("Clear all") { HotKeyRecorder(combo: $settings.clearHotKey) }
-                Text("While drawing: ⌘Z undo · ⇧⌘Z redo · P H L A R O I F E tools · 1–8 colors · [ ] width · Esc stop · Shift constrains shapes")
+                Toggle("⌃⌥1 – ⌃⌥0 pick a tool from any app", isOn: $settings.toolHotKeysEnabled)
+                Text(Tool.allCases.map { "\($0.globalShortcut) \($0.displayName)" }.joined(separator: " · "))
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("While drawing: ⌘Z undo · ⇧⌘Z redo · P H L A R O I F T E tools · 1–8 colors · [ ] width · Esc stop · Shift constrains shapes")
                     .font(.caption).foregroundStyle(.secondary)
             }
 

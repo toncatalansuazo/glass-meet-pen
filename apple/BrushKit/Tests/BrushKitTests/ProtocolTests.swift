@@ -443,3 +443,48 @@ private final class RawPeer {
         return done.wait(timeout: .now() + 5) == .success ? result : nil
     }
 }
+
+/// A newer computer may send strokes with tools this build doesn't know.
+final class UnknownToolTests: XCTestCase {
+    private let pen = Stroke(sourceID: .mouse, tool: .pen, color: RGBAColor.palette[0], width: 0.004,
+                             points: [StrokePoint(x: 0.1, y: 0.1)])
+    private let future = Stroke(sourceID: .mouse, tool: .arrow, color: RGBAColor.palette[1], width: 0.004,
+                                points: [StrokePoint(x: 0.2, y: 0.2), StrokePoint(x: 0.3, y: 0.3)])
+
+    /// Re-encodes `message` with every "arrow" tool renamed to a tool this build doesn't have.
+    private func withUnknownTool(_ message: ServerMessage) throws -> Data {
+        let data = try MessageCodec.encode(message)
+        var plist = try PropertyListSerialization.propertyList(from: data, format: nil)
+        func rename(_ value: Any) -> Any {
+            if let dict = value as? [String: Any] {
+                return dict.mapValues { ($0 as? String) == "arrow" ? "laser-pointer" : rename($0) }
+            }
+            if let array = value as? [Any] { return array.map(rename) }
+            return value
+        }
+        plist = rename(plist)
+        return try PropertyListSerialization.data(fromPropertyList: plist, format: .binary, options: 0)
+    }
+
+    func testCommittedChangesKeepTheStrokesThisBuildCanRead() throws {
+        let removed = UUID()
+        let data = try withUnknownTool(.committedChanged(added: [pen, future], removed: [removed]))
+        XCTAssertEqual(try MessageCodec.decode(ServerMessage.self, from: data), .committedChanged(added: [pen], removed: [removed]))
+    }
+
+    func testWelcomeSnapshotSkipsUnknownStrokes() throws {
+        let welcome = Welcome(macName: "Mac", display: DisplayInfo(id: 1, name: "D", width: 100, height: 50),
+                              snapshot: [future, pen], toolState: ToolState(), macDrawMode: false, screenPermission: true)
+        guard case .welcome(let decoded) = try MessageCodec.decode(ServerMessage.self, from: withUnknownTool(.welcome(welcome))) else {
+            return XCTFail("welcome must still decode")
+        }
+        XCTAssertEqual(decoded.snapshot, [pen])
+        XCTAssertEqual(decoded.macName, "Mac")
+    }
+
+    func testStrokeListIsAPlainArrayOnTheWire() throws {
+        let asList = try PropertyListSerialization.propertyList(from: MessageCodec.encode(StrokeList([pen])), format: nil)
+        let asArray = try PropertyListSerialization.propertyList(from: MessageCodec.encode([pen]), format: nil)
+        XCTAssertEqual(asList as? NSArray, asArray as? NSArray)
+    }
+}

@@ -54,7 +54,8 @@ The first build asks for keychain access for `codesign`. Click **Always Allow**.
 | ⌥⌘D | Toggle drawing (global, configurable) |
 | ⌥⌘K | Clear all (global, configurable) |
 | ⌘Z / ⇧⌘Z | Undo / redo (mouse strokes; the phone has its own undo) |
-| P H L A R O I F E | Pen, highlighter, line, arrow, rectangle, ellipse, phone, person, eraser |
+| ⌃⌥1 … ⌃⌥0 | Pick a tool and start drawing, from any app (left hand only): pen, highlighter, line, arrow, rectangle, ellipse, phone, person, text, eraser (on/off in Settings) |
+| P H L A R O I F T E | Same tools while drawing |
 | 1–8 | Colors |
 | [ / ] | Thinner / thicker |
 | Shift | Constrain shapes to square/circle, lines to 45°, figures to their natural proportions |
@@ -65,6 +66,7 @@ Toolbar extras:
 - **Position:** keep the toolbar as a bar at the bottom or as a sidebar on the left or right (toolbar position button, or menu bar → *Toolbar Position*). It is remembered between launches.
 
 - **Phone / person figures:** drag to size them, or click to drop one at a default size.
+- **Text:** pick the Text tool (T or ⌃⌥9), click, type, and press Return (Esc cancels). The width setting sets the text size.
 - **Tool, color and width buttons** show the current choice; hover over one (or click it) to see all the options.
   To show every option in the toolbar instead, turn off *Compact toolbar* in Settings.
 - **Toolbar background:** Settings → Toolbar → *Background* makes it see-through (0% leaves only the buttons).
@@ -72,7 +74,8 @@ Toolbar extras:
 - **Ink opacity:** the slider under the colors makes new strokes more see-through (10%–100%).
 - **Timer** (opens upward): new strokes fade after 1 s (the default), 3 s or 5 s. *Permanent* keeps them until cleared.
   Ink opacity and the timer choice are remembered between launches.
-- **Whiteboard:** hides the apps under the overlay. The slider next to it sets how see-through it is (remembered between launches).
+- **Whiteboard:** hides the apps under the overlay, also while you click through to them. The slider next to it sets how
+  see-through it is (remembered between launches). Closing or hiding the toolbar removes the board, so the screen can't get stuck white.
   The phone preview still shows the Mac screen without the board.
 
 Settings (menu bar → Settings…): Show in Dock, hotkeys, default display.

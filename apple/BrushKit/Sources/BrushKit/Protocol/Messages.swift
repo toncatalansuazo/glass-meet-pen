@@ -34,7 +34,7 @@ public enum ServerMessage: Codable, Equatable, Sendable {
     case liveBegan(Stroke)
     case liveUpdated(id: UUID, points: [StrokePoint], replace: Bool)
     case liveCancelled(id: UUID)
-    case committedChanged(added: [Stroke], removed: [UUID])
+    case committedChanged(added: StrokeList, removed: [UUID])
     case toolChanged(source: SourceID, state: ToolState)
     case drawModeChanged(Bool)
     case displayChanged(DisplayInfo)
@@ -49,7 +49,7 @@ public enum ServerMessage: Codable, Equatable, Sendable {
         case .liveBegan(let s): self = .liveBegan(s)
         case .liveUpdated(let id, let pts, let replace): self = .liveUpdated(id: id, points: pts, replace: replace)
         case .liveCancelled(let id): self = .liveCancelled(id: id)
-        case .committedChanged(let a, let r): self = .committedChanged(added: a, removed: r)
+        case .committedChanged(let a, let r): self = .committedChanged(added: StrokeList(a), removed: r)
         }
     }
 
@@ -58,7 +58,7 @@ public enum ServerMessage: Codable, Equatable, Sendable {
         case .liveBegan(let s): return .liveBegan(s)
         case .liveUpdated(let id, let pts, let replace): return .liveUpdated(id: id, points: pts, replace: replace)
         case .liveCancelled(let id): return .liveCancelled(id: id)
-        case .committedChanged(let a, let r): return .committedChanged(added: a, removed: r)
+        case .committedChanged(let a, let r): return .committedChanged(added: a.strokes, removed: r)
         default: return nil
         }
     }
@@ -67,14 +67,50 @@ public enum ServerMessage: Codable, Equatable, Sendable {
 public struct Welcome: Codable, Equatable, Sendable {
     public var macName: String
     public var display: DisplayInfo
-    public var snapshot: [Stroke]
+    /// Sent as "snapshot"; strokes this build can't read are skipped (see `StrokeList`).
+    private var snapshotList: StrokeList
+    public var snapshot: [Stroke] {
+        get { snapshotList.strokes }
+        set { snapshotList = StrokeList(newValue) }
+    }
     public var toolState: ToolState
     public var macDrawMode: Bool
     public var screenPermission: Bool
+
     public init(macName: String, display: DisplayInfo, snapshot: [Stroke], toolState: ToolState,
                 macDrawMode: Bool, screenPermission: Bool) {
-        self.macName = macName; self.display = display; self.snapshot = snapshot
+        self.macName = macName; self.display = display; self.snapshotList = StrokeList(snapshot)
         self.toolState = toolState; self.macDrawMode = macDrawMode; self.screenPermission = screenPermission
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case macName, display, snapshotList = "snapshot", toolState, macDrawMode, screenPermission
+    }
+}
+
+/// A list of strokes, sent as a plain array. When decoding it skips strokes this
+/// build can't read (for example one drawn with a tool added in a later version),
+/// so a newer computer never breaks an older phone's whole message.
+public struct StrokeList: Codable, Equatable, Sendable, ExpressibleByArrayLiteral {
+    public var strokes: [Stroke]
+
+    public init(_ strokes: [Stroke]) { self.strokes = strokes }
+    public init(arrayLiteral elements: Stroke...) { strokes = elements }
+
+    private struct Skip: Decodable {}
+
+    public init(from decoder: Decoder) throws {
+        var c = try decoder.unkeyedContainer()
+        var out: [Stroke] = []
+        while !c.isAtEnd {
+            if let stroke = try? c.decode(Stroke.self) { out.append(stroke) } else { _ = try c.decode(Skip.self) }
+        }
+        strokes = out
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(strokes)
     }
 }
 

@@ -71,6 +71,7 @@ final class OverlayController {
 
     /// Shortcuts while drawing: ⌘Z/⇧⌘Z, tool letters, 1–8 colors, Esc leaves draw mode.
     private func handleKey(_ event: NSEvent) -> Bool {
+        guard !canvas.isEditingText else { return false } // keys belong to the text being typed
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let chars = event.charactersIgnoringModifiers?.lowercased() ?? ""
         if flags.contains(.command) {
@@ -106,7 +107,7 @@ final class OverlayController {
 /// Renders committed strokes as one `CAShapeLayer` each, plus live strokes, and
 /// turns mouse input into document intents.
 @MainActor
-final class OverlayView: NSView {
+final class OverlayView: NSView, NSTextFieldDelegate {
     private let model: AppModel
     private let board = CALayer()
     private let container = CALayer()
@@ -117,6 +118,11 @@ final class OverlayView: NSView {
     private var erasing = false
     private var tracking: NSTrackingArea?
     private var subscriptions: Set<AnyCancellable> = []
+    /// The text being typed with the Text tool, before it becomes a stroke, and the
+    /// style it was opened with (later toolbar changes don't alter it).
+    private var textEditor: NSTextField?
+    private var textStyle: (fontSize: CGFloat, color: RGBAColor, width: WidthPreset)?
+    var isEditingText: Bool { textEditor != nil }
 
     init(model: AppModel) {
         self.model = model
@@ -129,11 +135,18 @@ final class OverlayView: NSView {
         container.isGeometryFlipped = true // top-left origin, matching normalized coordinates
         layer?.addSublayer(container)
 
-        model.$boardEnabled.combineLatest(model.$boardOpacity)
-            .sink { [weak self] enabled, opacity in self?.board.opacity = enabled ? Float(opacity) : 0 }
+        model.$boardEnabled.combineLatest(model.$boardOpacity, model.$toolbarVisible)
+            .sink { [weak self] enabled, opacity, toolbarVisible in
+                self?.board.opacity = Whiteboard.visibleOpacity(enabled: enabled, opacity: opacity, toolbarVisible: toolbarVisible)
+            }
             .store(in: &subscriptions)
         model.$mouseTool
-            .sink { [weak self] _ in DispatchQueue.main.async { self?.updateCursor() } }
+            .sink { [weak self] state in
+                DispatchQueue.main.async {
+                    if state.tool != .text { self?.finishText() }
+                    self?.updateCursor()
+                }
+            }
             .store(in: &subscriptions)
     }
 
@@ -243,6 +256,7 @@ final class OverlayView: NSView {
             updateCursor()
         } else {
             finishActiveStroke(cancel: true)
+            finishText()
             NSCursor.arrow.set()
         }
     }
@@ -265,7 +279,11 @@ final class OverlayView: NSView {
 
     private func updateCursor() {
         guard model.drawMode else { return }
-        (model.mouseTool.tool == .eraser ? Self.eraserCursor : Self.pencilCursor).set()
+        switch model.mouseTool.tool {
+        case .eraser: Self.eraserCursor.set()
+        case .text: NSCursor.iBeam.set()
+        default: Self.pencilCursor.set()
+        }
     }
 
     /// Pencil whose tip (bottom-left of the glyph) is the hot spot.
@@ -311,14 +329,17 @@ final class OverlayView: NSView {
         guard model.drawMode else { return }
         let point = normalized(event)
         let state = model.mouseTool
+        if state.tool == .text {
+            // A click while typing places the text; the next click starts a new one.
+            if isEditingText { finishText() } else { beginText(at: convert(event.locationInWindow, from: nil)) }
+            return
+        }
         if state.tool == .eraser {
             erasing = true
             model.erase(source: .mouse, points: [point], radius: model.eraserRadius(state.width))
             return
         }
-        var color = state.color
-        color.a = Float(model.inkOpacity)
-        let stroke = Stroke(sourceID: .mouse, tool: state.tool, color: color,
+        let stroke = Stroke(sourceID: .mouse, tool: state.tool, color: inkColor,
                             width: state.width.normalized(displayWidth: model.display.width), points: [point])
         activeStroke = stroke
         model.begin(stroke)
@@ -373,5 +394,63 @@ final class OverlayView: NSView {
         guard let stroke = activeStroke else { return }
         activeStroke = nil
         cancel ? model.cancel(source: .mouse, id: stroke.id) : model.end(source: .mouse, id: stroke.id)
+    }
+
+    // MARK: Text
+
+    /// The selected color with the ink opacity as its alpha.
+    private var inkColor: RGBAColor {
+        var color = model.mouseTool.color
+        color.a = Float(model.inkOpacity)
+        return color
+    }
+
+    /// Opens a borderless field at `point` (view coordinates) to type into.
+    private func beginText(at point: NSPoint) {
+        let style = (fontSize: TextLayout.fontSize(for: model.mouseTool.width), color: inkColor, width: model.mouseTool.width)
+        let field = NSTextField(string: "")
+        field.isBordered = false
+        field.drawsBackground = false
+        field.focusRingType = .none
+        field.font = .systemFont(ofSize: style.fontSize)
+        field.textColor = style.color.nsColor
+        field.placeholderString = "Type, then press Return"
+        field.delegate = self
+        let height = TextLayout.lineHeight(forFontSize: style.fontSize) + 4
+        field.frame = NSRect(x: point.x, y: point.y - height / 2, width: max(bounds.maxX - point.x - 8, 120), height: height)
+        addSubview(field)
+        textEditor = field
+        textStyle = style
+        window?.makeFirstResponder(field)
+    }
+
+    /// Turns the typed text into a stroke and closes the field. Nothing is placed when
+    /// the text is empty or has nothing drawable (only emoji, for example).
+    private func finishText(cancel: Bool = false) {
+        guard let field = textEditor, let style = textStyle else { return }
+        textEditor = nil
+        textStyle = nil
+        let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let frame = field.frame
+        field.removeFromSuperview()
+        window?.makeFirstResponder(self)
+        guard !cancel, TextLayout.isDrawable(text) else { return }
+        // AppKit frames grow upwards; the box is top-left-origin like the strokes.
+        let fieldFrame = CGRect(x: frame.minX, y: bounds.height - frame.maxY, width: frame.width, height: frame.height)
+        let corners = TextLayout.corners(textSize: TextLayout.size(of: text, fontSize: style.fontSize),
+                                         fieldFrame: fieldFrame, in: bounds.size)
+        let stroke = Stroke(sourceID: .mouse, tool: .text, color: style.color,
+                            width: style.width.normalized(displayWidth: model.display.width), points: corners, text: text)
+        model.begin(stroke)
+        model.end(source: .mouse, id: stroke.id)
+    }
+
+    /// Return places the text; Esc throws it away.
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+        switch selector {
+        case #selector(NSResponder.insertNewline(_:)): finishText(); return true
+        case #selector(NSResponder.cancelOperation(_:)): finishText(cancel: true); return true
+        default: return false
+        }
     }
 }

@@ -207,10 +207,10 @@ viewport(rect: nil, …)     → { "viewport": { "pixelWidth": 10, "pixelHeight"
 
 | Type | Encoding |
 | --- | --- |
-| `Stroke` | `{id: UUID string, sourceID: SourceID, tool: Tool, color: RGBAColor, width: real, points: [StrokePoint], seq: integer, createdAt: date}` |
+| `Stroke` | `{id: UUID string, sourceID: SourceID, tool: Tool, color: RGBAColor, width: real, points: [StrokePoint], seq: integer, createdAt: date, text: string (text tool only)}` |
 | `StrokePoint` | `{x, y, p}` reals. `(0,0)` is the display's top-left and `(1,1)` its bottom-right. `p` is pressure from 0 to 1 (1 without pressure). |
 | `SourceID` | `{rawValue: string}`. The mouse is `"mouse"`. |
-| `Tool` | string: `pen`, `highlighter`, `line`, `arrow`, `rectangle`, `ellipse`, `phone`, `person`, `eraser` |
+| `Tool` | string: `pen`, `highlighter`, `line`, `arrow`, `rectangle`, `ellipse`, `phone`, `person`, `text`, `eraser` |
 | `RGBAColor` | `{r, g, b, a}` reals from 0 to 1. `a` is the ink opacity. |
 | `WidthPreset` | integer: 0 fine (3 pt), 1 medium (6 pt), 2 bold (11 pt), 3 heavy (18 pt) |
 | `ToolState` | `{tool: Tool, color: RGBAColor, width: WidthPreset}` |
@@ -225,6 +225,15 @@ More rules:
 - **Stroke width** is a fraction of the display width (`points / displayWidth`).
 - **Shapes and figures** (`line`, `arrow`, `rectangle`, `ellipse`, `phone`, `person`) have exactly two points: start and end.
 - **Rendering:** highlighters are drawn 2.5× wider, with alpha × 0.35.
+- **Unknown tools:** a client that can't read a stroke (for example a `tool` added in a later
+  version) skips that stroke and keeps the rest of the message: the other strokes in
+  `committedChanged.added` and `welcome.snapshot` still apply. New tools don't change the protocol version.
+- **Text** (`tool: text`): `points` are the top-left and bottom-right corners of the text's box, and
+  `text` is one line of text. Draw it in the system UI font, filled in `color`:
+  `fontSize = box height / 1.25`, the first glyph starts at the box's left edge, and the font's full
+  height is centred in the box: baseline at `box top + (box height − (ascent + descent)) / 2 + ascent`
+  (y grows downwards; ascent and descent of the font at `fontSize`). Only glyphs with outlines
+  are drawn (emoji are not). The phone app only shows text; it does not create it.
 
 ### Client → server (`ClientMessage`)
 

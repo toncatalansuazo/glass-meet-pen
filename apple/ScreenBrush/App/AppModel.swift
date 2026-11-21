@@ -35,12 +35,16 @@ final class AppModel: ObservableObject {
     @Published var inkOpacity: Double = AppSettings.shared.inkOpacity {
         didSet { settings.inkOpacity = inkOpacity }
     }
-    /// Whiteboard behind the strokes, hiding the apps under the overlay.
+    /// Whiteboard behind the strokes, hiding the apps under the overlay. It stays while
+    /// clicking through; hiding the toolbar hides it (see `Whiteboard.visibleOpacity`).
     @Published var boardEnabled = false
     @Published var boardOpacity: Double = AppSettings.shared.boardOpacity {
         didSet { settings.boardOpacity = boardOpacity }
     }
-    @Published var toolbarVisible = true
+    /// Hiding the toolbar also stops drawing and hides the whiteboard.
+    @Published var toolbarVisible = true {
+        didSet { if !toolbarVisible { setDrawMode(false) } }
+    }
     @Published private(set) var display: DisplayInfo
     @Published private(set) var screens: [NSScreen] = NSScreen.screens
     @Published private(set) var canUndo = false
@@ -107,6 +111,12 @@ final class AppModel: ObservableObject {
     }
 
     func toggleDrawMode() { setDrawMode(!drawMode) }
+
+    /// ⌃⌥1…⌃⌥0: pick a tool and start drawing with it.
+    func startDrawing(with tool: Tool) {
+        selectTool(tool)
+        setDrawMode(true)
+    }
 
     // MARK: Listeners
 

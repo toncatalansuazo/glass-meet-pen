@@ -198,7 +198,7 @@ struct ToolbarView: View {
                         .background(model.mouseTool.tool == tool ? Color.primary.opacity(0.15) : .clear,
                                     in: RoundedRectangle(cornerRadius: 7))
                 }
-                .hoverTip("\(tool.displayName) (\(String(tool.shortcutKey).uppercased()))")
+                .hoverTip(tool.shortcutHelp)
             }
         }
 
@@ -327,7 +327,8 @@ struct ToolbarView: View {
         if selected { Label(title, systemImage: "checkmark") } else { Text(title) }
     }
 
-    /// Whiteboard behind the strokes, with its opacity slider while it is on.
+    /// Whiteboard behind the strokes and its opacity slider.
+    /// Moving the slider turns the board on.
     @ViewBuilder private var boardControls: some View {
         Button { model.boardEnabled.toggle() } label: {
             Image(systemName: model.boardEnabled ? "rectangle.inset.filled" : "rectangle.dashed")
@@ -335,12 +336,11 @@ struct ToolbarView: View {
                 .foregroundStyle(model.boardEnabled ? Color.accentColor : Color.primary)
         }
         .hoverTip(model.boardEnabled ? "Hide whiteboard" : "Show whiteboard")
-        if model.boardEnabled {
-            Slider(value: $model.boardOpacity, in: 0.1...1)
-                .controlSize(.small)
-                .frame(width: vertical ? Self.columnWidth : 76)
-                .hoverTip("Whiteboard opacity \(Int(model.boardOpacity * 100))%")
-        }
+        Slider(value: Binding(get: { model.boardOpacity },
+                              set: { model.boardOpacity = $0; model.boardEnabled = true }), in: 0.1...1)
+            .controlSize(.small)
+            .frame(width: vertical ? Self.columnWidth : 76)
+            .hoverTip("Whiteboard opacity \(Int(model.boardOpacity * 100))%")
     }
 
     private var divider: some View {
@@ -366,6 +366,7 @@ struct ToolbarView: View {
 
 extension RGBAColor {
     var swiftUI: Color { Color(.sRGB, red: Double(r), green: Double(g), blue: Double(b), opacity: Double(a)) }
+    var nsColor: NSColor { NSColor(srgbRed: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: CGFloat(a)) }
 }
 
 private struct FlyoutAnchorKey: PreferenceKey {

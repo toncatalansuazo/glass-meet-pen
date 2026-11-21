@@ -102,7 +102,8 @@ final class GeometryTests: XCTestCase {
         let size = CGSize(width: 1000, height: 600)
         for tool in Tool.allCases {
             let s = Stroke(sourceID: .mouse, tool: tool, color: RGBAColor.palette[1], width: 0.005,
-                           points: [StrokePoint(x: 0.1, y: 0.1, p: 0.2), StrokePoint(x: 0.3, y: 0.2, p: 0.9), StrokePoint(x: 0.5, y: 0.5, p: 0.5)])
+                           points: [StrokePoint(x: 0.1, y: 0.1, p: 0.2), StrokePoint(x: 0.3, y: 0.2, p: 0.9), StrokePoint(x: 0.5, y: 0.5, p: 0.5)],
+                           text: tool.isText ? "Hi" : nil)
             let r = StrokeRenderer.render(s, size: size)
             XCTAssertNotNil(r, "\(tool)")
             XCTAssertFalse(r!.path.isEmpty, "\(tool)")

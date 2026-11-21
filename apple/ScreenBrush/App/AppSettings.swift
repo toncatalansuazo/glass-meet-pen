@@ -1,4 +1,5 @@
 import AppKit
+import BrushKit
 import Carbon.HIToolbox
 
 /// Persistent user preferences (UserDefaults-backed).
@@ -18,6 +19,8 @@ final class AppSettings: ObservableObject {
     @Published var fadeDelay: Double { didSet { defaults.set(fadeDelay, forKey: "fadeDelaySeconds") } }
     @Published var drawHotKey: KeyCombo { didSet { save(drawHotKey, "drawHotKey"); onHotKeysChanged?() } }
     @Published var clearHotKey: KeyCombo { didSet { save(clearHotKey, "clearHotKey"); onHotKeysChanged?() } }
+    /// ⌃⌥1…⌃⌥0 pick a tool from any app (⌥+number alone types characters on many keyboards).
+    @Published var toolHotKeysEnabled: Bool { didSet { defaults.set(toolHotKeysEnabled, forKey: "toolHotKeysEnabled"); onHotKeysChanged?() } }
     @Published var defaultDisplayID: CGDirectDisplayID? {
         didSet {
             if let id = defaultDisplayID { defaults.set(Int(id), forKey: "defaultDisplayID") } else { defaults.removeObject(forKey: "defaultDisplayID") }
@@ -34,7 +37,7 @@ final class AppSettings: ObservableObject {
     var onHotKeysChanged: (() -> Void)?
 
     private init() {
-        defaults.register(defaults: ["showInDock": true, "boardOpacity": 0.9, "inkOpacity": 1.0, "fadeDelaySeconds": 1.0, "compactToolbar": true, "toolbarOpacity": 1.0])
+        defaults.register(defaults: ["showInDock": true, "boardOpacity": 0.9, "inkOpacity": 1.0, "fadeDelaySeconds": 1.0, "compactToolbar": true, "toolbarOpacity": 1.0, "toolHotKeysEnabled": true])
         showInDock = defaults.bool(forKey: "showInDock")
         boardOpacity = defaults.double(forKey: "boardOpacity")
         inkOpacity = defaults.double(forKey: "inkOpacity")
@@ -44,6 +47,7 @@ final class AppSettings: ObservableObject {
         fadeDelay = defaults.double(forKey: "fadeDelaySeconds")
         drawHotKey = Self.load("drawHotKey") ?? KeyCombo(keyCode: UInt32(kVK_ANSI_D), modifiers: [.option, .command])
         clearHotKey = Self.load("clearHotKey") ?? KeyCombo(keyCode: UInt32(kVK_ANSI_K), modifiers: [.option, .command])
+        toolHotKeysEnabled = defaults.bool(forKey: "toolHotKeysEnabled")
         let id = defaults.integer(forKey: "defaultDisplayID")
         defaultDisplayID = id == 0 ? nil : CGDirectDisplayID(id)
     }
@@ -79,4 +83,9 @@ enum ToolbarPosition: String, CaseIterable {
         case .right: return "sidebar.right"
         }
     }
+}
+
+extension Tool {
+    /// Tooltip text: name, the key while drawing, and the global shortcut.
+    var shortcutHelp: String { "\(displayName) (\(String(shortcutKey).uppercased()) · \(globalShortcut))" }
 }

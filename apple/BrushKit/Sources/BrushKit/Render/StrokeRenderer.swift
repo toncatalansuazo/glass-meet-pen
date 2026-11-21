@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreText
 import Foundation
 
 /// A stroke turned into a path in view coordinates, ready to be drawn by a
@@ -28,6 +29,9 @@ public enum StrokeRenderer {
         case .line, .arrow, .rectangle, .ellipse, .phone, .person:
             let path = shapePath(stroke.tool, from: pts.first!, to: pts.last!, lineWidth: width)
             return RenderedStroke(path: path, mode: .stroke(lineWidth: width), color: color, alpha: alpha)
+        case .text:
+            guard let text = stroke.text, !text.isEmpty, pts.count >= 2 else { return nil }
+            return RenderedStroke(path: TextLayout.path(text, in: box(pts[0], pts[1])), mode: .fill, color: color, alpha: alpha)
         case .pen where hasPressureVariation(stroke.points):
             let pressures = stroke.points.map { CGFloat($0.p) }
             let path = variableWidthOutline(points: pts, pressures: pressures, baseWidth: width)
@@ -58,6 +62,11 @@ public enum StrokeRenderer {
     }
 
     // MARK: Paths
+
+    /// The rectangle spanned by two opposite corners.
+    static func box(_ a: CGPoint, _ b: CGPoint) -> CGRect {
+        CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y))
+    }
 
     static func hasPressureVariation(_ points: [StrokePoint]) -> Bool {
         guard let lo = points.map(\.p).min(), let hi = points.map(\.p).max() else { return false }
@@ -155,13 +164,13 @@ public enum StrokeRenderer {
                 path.move(to: l); path.addLine(to: b); path.addLine(to: r)
             }
         case .rectangle:
-            path.addRect(CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y)))
+            path.addRect(box(a, b))
         case .ellipse:
-            path.addEllipse(in: CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y)))
+            path.addEllipse(in: box(a, b))
         case .phone:
-            addPhone(to: path, in: CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y)))
+            addPhone(to: path, in: box(a, b))
         case .person:
-            addPerson(to: path, in: CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y)))
+            addPerson(to: path, in: box(a, b))
         default:
             path.move(to: a); path.addLine(to: b)
         }

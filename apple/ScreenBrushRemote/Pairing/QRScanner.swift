@@ -19,7 +19,7 @@ struct QRScannerView: View {
             }
             .ignoresSafeArea()
             .overlay(alignment: .bottom) {
-                Text("Point the camera at the QR code in Glasspen Meet on your Mac")
+                Text("Point the camera at the QR code in Glasspen Meet on your computer")
                     .font(.callout)
                     .padding(12)
                     .background(.ultraThinMaterial, in: Capsule())

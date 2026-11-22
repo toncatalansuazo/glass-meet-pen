@@ -6,7 +6,7 @@ On the phone, zoom into the exact spot first, then draw.
 | Folder | What's inside | Status |
 | --- | --- | --- |
 | [`apple/`](apple/) | **Glasspen Meet** for macOS, **Glasspen Remote** for iPhone/iPad, and the shared Swift package **BrushKit** | Working |
-| [`windows/`](windows/) | Glasspen Meet for Windows | Planned |
+| [`windows/`](windows/) | Glasspen Meet for Windows (C#/WPF), with the same phone remote | Builds; not yet run on Windows |
 | [`docs/protocol.md`](docs/protocol.md) | How the phone talks to the desktop app. Any desktop app that implements it works with Glasspen Remote. | |
 
 ## Download

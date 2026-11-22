@@ -45,6 +45,13 @@ final class ProtocolTests: XCTestCase {
         XCTAssertNil(VideoPacket(decoding: Data([1, 2])))
     }
 
+    /// Request ID 0 is a whole-screen frame (the Windows app's video); close-ups never use it.
+    func testRequestIDZeroIsAWholeScreenFrame() {
+        let full = DetailPacket(rect: NormRect(x: 0, y: 0, w: 1, h: 1), requestID: DetailPacket.fullFrameID, jpeg: Data([0xFF]))
+        XCTAssertTrue(DetailPacket(decoding: full.encoded())!.isFullFrame)
+        XCTAssertFalse(DetailPacket(rect: NormRect(x: 0, y: 0, w: 1, h: 1), requestID: 1, jpeg: Data()).isFullFrame)
+    }
+
     func testPairingLinkRoundTrip() {
         let secret = PairingSecret.generate()
         XCTAssertEqual(secret.token.count, 22)

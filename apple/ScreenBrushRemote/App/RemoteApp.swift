@@ -10,13 +10,13 @@ struct RemoteApp: App {
         WindowGroup {
             RootView(model: model)
                 .onOpenURL { model.handle(url: $0) } // system Camera app scanning the QR opens us directly
-                .alert("Connect to this Mac?", isPresented: Binding(get: { model.pendingLink != nil },
+                .alert("Connect to this computer?", isPresented: Binding(get: { model.pendingLink != nil },
                                                                      set: { if !$0 { model.pendingLink = nil } }),
                        presenting: model.pendingLink) { _ in
                     Button("Connect") { model.acceptPendingLink() }
                     Button("Cancel", role: .cancel) { model.pendingLink = nil }
                 } message: { link in
-                    Text(verbatim: "\(link.serviceName)\n\nThis replaces the Mac Glasspen Remote is paired with now.")
+                    Text(verbatim: "\(link.serviceName)\n\nThis replaces the computer Glasspen Remote is paired with now.")
                 }
                 .onAppear { model.resumeIfPossible() }
                 .onChange(of: scenePhase) { _, phase in model.scenePhaseChanged(active: phase == .active) }

@@ -203,6 +203,7 @@ final class CaptureService: NSObject, SCStreamOutput, SCStreamDelegate, @uncheck
             viewport = rect
             viewportPixels = pixels
             detailRequestID &+= 1
+            if detailRequestID == DetailPacket.fullFrameID { detailRequestID = 1 } // 0 means a whole-screen frame
             detailWorkItem?.cancel()
             if rect != nil { scheduleDetail(after: 0.15) }
         }

@@ -107,13 +107,13 @@ struct ControlsBar: View {
             VStack(spacing: 2) {
                 Image(systemName: model.macDrawMode ? "cursorarrow.click.badge.clock" : "cursorarrow")
                     .font(.body)
-                Text(model.macDrawMode ? "Mac: draw" : "Mac: click")
+                Text(model.macDrawMode ? "Draw" : "Click")
                     .font(.system(size: 9, weight: .semibold))
             }
             .frame(width: 52, height: 40)
             .foregroundStyle(model.macDrawMode ? Color.accentColor : Color.primary)
         }
-        .accessibilityLabel(model.macDrawMode ? "Mac draw mode on" : "Mac draw mode off")
+        .accessibilityLabel(model.macDrawMode ? "Computer draw mode on" : "Computer draw mode off")
     }
 
     private func iconButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {

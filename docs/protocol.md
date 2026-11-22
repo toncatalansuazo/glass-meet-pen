@@ -308,15 +308,21 @@ u32 requestID
 rest JPEG bytes
 ```
 
-## 9. Notes for a new desktop implementation (e.g. Windows)
+`requestID` **0** with the full rect `(0, 0, 1, 1)` is a **whole-screen frame**. A computer that
+doesn't send H.264 video (the Windows app) sends these instead, a few per second; the phone shows
+the latest one as the screen. Close-ups of the zoomed area use request IDs from 1 up (the Mac skips 0
+when the counter wraps). A phone that gets H.264 video hides the whole-screen frame.
 
-- **Messages:** .NET has no built-in reader for binary property lists. A library such as
-  `plist-cil` (NuGet) reads and writes them.
-- **Crypto:** HKDF, HMAC-SHA256, SHA-256 and ChaCha20-Poly1305 are in `System.Security.Cryptography`
-  (.NET 8+). .NET has no X25519; use a library such as NSec (libsodium) or BouncyCastle.
-- **Discovery:** Bonjour/mDNS can come from Windows' DNS-SD API or a library such as `Makaretu.Dns.Multicast`.
-  If discovery fails, the phone can still connect with the `h` and `p` values in the QR code.
-- **Video:** the phone expects H.264 in AVCC form. On Windows, Media Foundation produces Annex-B
-  (start codes), so convert it: replace each start code with a 4-byte length.
-- **Naming:** the protocol strings (`screenbrush`, `paintscreen`) are older internal names.
-  They are part of the protocol, so keep them exactly as written.
+## 9. Implementations
+
+- **Mac** (`apple/`): Swift, BrushKit. Sends H.264 video.
+- **Windows** (`windows/`): C#, `Glasspen.Core`. Its tests decode messages encoded by the Swift
+  code (`SwiftFixtures.txt`) and check the test values in section 5. Notes:
+  - Binary property lists: its own small reader/writer (`BinaryPlist.cs`). Swift `Float` values are
+    written as 4-byte reals.
+  - X25519 and ChaCha20-Poly1305 come from BouncyCastle; HKDF, HMAC and SHA-256 from .NET.
+  - Bonjour: `Makaretu.Dns.Multicast`. If the phone doesn't list the PC, the QR code still works (it
+    holds the address).
+  - Screen: whole-screen JPEG stills about 4 times a second (section 8) instead of H.264 video.
+- **Naming:** the protocol strings (`screenbrush`, `paintscreen`) are older internal names. They are
+  part of the protocol, so keep them exactly as written.

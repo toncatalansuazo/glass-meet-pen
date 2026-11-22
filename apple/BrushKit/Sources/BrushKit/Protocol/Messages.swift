@@ -184,8 +184,14 @@ public struct VideoPacket: Equatable, Sendable {
     }
 }
 
-/// A high-resolution still of part of the display (JPEG).
+/// A high-resolution still of part of the display (JPEG). Request ID 0 with the full rect is a
+/// whole-screen frame, which a computer without H.264 video (the Windows app) sends instead.
 public struct DetailPacket: Equatable, Sendable {
+    public static let fullFrameID: UInt32 = 0
+
+    /// A whole-screen frame rather than a close-up of the zoomed area.
+    public var isFullFrame: Bool { requestID == Self.fullFrameID }
+
     public var rect: NormRect
     public var requestID: UInt32
     public var jpeg: Data

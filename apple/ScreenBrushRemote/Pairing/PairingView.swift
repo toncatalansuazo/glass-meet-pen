@@ -21,19 +21,19 @@ struct PairingView: View {
                     Button {
                         scanning = true
                     } label: {
-                        Label("Scan QR Code from Mac", systemImage: "qrcode.viewfinder")
+                        Label("Scan QR Code", systemImage: "qrcode.viewfinder")
                             .font(.headline)
                     }
                 } footer: {
-                    Text("On your Mac, open Glasspen Meet in the menu bar → Connect iPhone/iPad…")
+                    Text("On your Mac or PC, open Glasspen Meet → Connect iPhone/iPad…")
                 }
 
-                Section("Macs on this network") {
+                Section("Computers on this network") {
                     if browser.permissionDenied {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Local Network access is off", systemImage: "wifi.exclamationmark")
                                 .font(.headline)
-                            Text("Glasspen Remote needs Local Network access to find your Mac. Turn it on in Settings → Privacy & Security → Local Network.")
+                            Text("Glasspen Remote needs Local Network access to find your computer. Turn it on in Settings → Privacy & Security → Local Network.")
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                             Button("Open Settings") {
@@ -95,16 +95,16 @@ struct ConfirmCodeView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Text("Does your Mac show the same code?").font(.callout)
+            Text("Does your computer show the same code?").font(.callout)
             Text(Handshake.displayCode(code))
                 .font(.system(size: 40, weight: .semibold, design: .monospaced))
             if confirmed {
-                HStack { ProgressView(); Text("Now click **Allow** on the Mac.") }
+                HStack { ProgressView(); Text("Now click **Allow** on the computer.") }
                     .font(.callout)
             } else {
                 Button("Codes Match", action: onMatch)
                     .buttonStyle(.borderedProminent)
-                Text("If the codes are different, cancel: another device may be pretending to be your Mac.")
+                Text("If the codes are different, cancel: another device may be pretending to be your computer.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -131,7 +131,7 @@ struct ManualAddressView: View {
                     TextField("Port", text: $port)
                         .keyboardType(.numberPad)
                 } footer: {
-                    Text("The Mac shows its address at the bottom of the Connect iPhone/iPad window.")
+                    Text("The computer shows its address at the bottom of the Connect iPhone/iPad window.")
                 }
             }
             .navigationTitle("Manual address")

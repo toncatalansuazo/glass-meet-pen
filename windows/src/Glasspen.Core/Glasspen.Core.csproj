@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Platform-neutral core: drawing model, protocol and pairing. Builds and tests on any OS. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Glasspen.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- X25519 and ChaCha20-Poly1305 in managed code (identical on every Windows version). -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Glasspen.Core.Tests" />
+  </ItemGroup>
+</Project>

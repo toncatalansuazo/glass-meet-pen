@@ -40,6 +40,8 @@ final class RemoteModel: ObservableObject {
     var onDocumentChanged: (() -> Void)?
     var onVideo: ((VideoPacket) -> Void)?
     var onDetail: ((DetailPacket?) -> Void)?
+    /// A whole-screen JPEG frame (computers without H.264 video, like the Windows app).
+    var onFrame: ((DetailPacket) -> Void)?
     var onFitRequested: (() -> Void)?
     var onDisplayChanged: (() -> Void)?
     var onVideoReset: (() -> Void)?
@@ -143,7 +145,12 @@ final class RemoteModel: ObservableObject {
             if self?.hasVideo == false { self?.hasVideo = true }
             self?.onVideo?(packet)
         }
-        c.onDetail = { [weak self] in self?.onDetail?($0) }
+        c.onDetail = { [weak self] packet in
+            guard let self else { return }
+            guard packet.isFullFrame else { self.onDetail?(packet); return }
+            if !self.hasVideo { self.hasVideo = true }
+            self.onFrame?(packet)
+        }
         c.onClose = { [weak self] error in
             self?.connectionClosed(error)
         }

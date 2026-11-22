@@ -5,13 +5,14 @@ import UIKit
 
 /// Zoomable live view of the Mac display with vector annotations on top.
 ///
-/// Layers, bottom to top: video → detail still (inside the zoomed content) →
+/// Layers, bottom to top: video (or whole-screen stills from the Windows app) → detail still (inside the zoomed content) →
 /// strokes (a screen-space view redrawn on every zoom/pan, so strokes stay sharp).
 final class CanvasViewController: UIViewController, UIScrollViewDelegate, UIGestureRecognizerDelegate {
     private let model: RemoteModel
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let videoView = VideoView()
+    private let frameView = UIImageView()
     private let detailView = UIImageView()
     private let strokeView = StrokeOverlayView()
     private let placeholder = UILabel()
@@ -49,11 +50,14 @@ final class CanvasViewController: UIViewController, UIScrollViewDelegate, UIGest
 
         scrollView.addSubview(contentView)
         contentView.addSubview(videoView)
+        frameView.contentMode = .scaleToFill
+        frameView.isHidden = true
+        contentView.addSubview(frameView)
         detailView.contentMode = .scaleToFill
         detailView.isHidden = true
         contentView.addSubview(detailView)
 
-        placeholder.text = "Waiting for the Mac screen…"
+        placeholder.text = "Waiting for the computer’s screen…"
         placeholder.textColor = .secondaryLabel
         placeholder.font = .preferredFont(forTextStyle: .footnote)
         placeholder.textAlignment = .center
@@ -73,7 +77,11 @@ final class CanvasViewController: UIViewController, UIScrollViewDelegate, UIGest
 
         videoView.onNeedKeyframe = { [weak self] in self?.model.requestKeyframe() }
 
-        model.onVideo = { [weak self] in self?.videoView.enqueue($0) }
+        model.onVideo = { [weak self] packet in
+            self?.frameView.isHidden = true
+            self?.videoView.enqueue(packet)
+        }
+        model.onFrame = { [weak self] packet in self?.showFrame(packet) }
         model.onVideoReset = { [weak self] in self?.videoView.reset() }
         model.onDetail = { [weak self] in self?.showDetail($0) }
         model.onDocumentChanged = { [weak self] in self?.strokeView.setNeedsDisplay() }
@@ -85,7 +93,7 @@ final class CanvasViewController: UIViewController, UIScrollViewDelegate, UIGest
         model.$mode.sink { [weak self] in self?.applyMode($0) }.store(in: &cancellables)
         model.$hasVideo.combineLatest(model.$screenPermission).sink { [weak self] hasVideo, granted in
             self?.placeholder.isHidden = hasVideo
-            self?.placeholder.text = granted ? "Waiting for the Mac screen…"
+            self?.placeholder.text = granted ? "Waiting for the computer’s screen…"
                 : "Screen preview is off: allow Screen Recording for Glasspen Meet on your Mac.\nYou can still draw."
         }.store(in: &cancellables)
 
@@ -116,6 +124,7 @@ final class CanvasViewController: UIViewController, UIScrollViewDelegate, UIGest
         let fit = Geometry.aspectFit(aspect: CGFloat(model.display.aspect), in: CGRect(origin: .zero, size: view.bounds.size))
         contentView.frame = CGRect(origin: .zero, size: fit.size)
         videoView.frame = contentView.bounds
+        frameView.frame = contentView.bounds
         placeholder.frame = contentView.bounds.insetBy(dx: 24, dy: 24)
         layoutDetail()
         scrollView.contentSize = fit.size
@@ -186,6 +195,12 @@ final class CanvasViewController: UIViewController, UIScrollViewDelegate, UIGest
         let scale = view.window?.screen.scale ?? 3
         let pixels = CGSize(width: visible.width * scrollView.zoomScale * scale, height: visible.height * scrollView.zoomScale * scale)
         model.sendViewport(norm, pixels: pixels)
+    }
+
+    private func showFrame(_ packet: DetailPacket) {
+        guard let image = UIImage(data: packet.jpeg) else { return }
+        frameView.image = image
+        frameView.isHidden = false
     }
 
     private func showDetail(_ packet: DetailPacket?) {

@@ -3,6 +3,8 @@
 Draw on your screen while you share it in a call, with the mouse or with your iPhone/iPad as a remote.
 On the phone, zoom into the exact spot first, then draw.
 
+![Glasspen Meet: typing a note, then drawing boxes, arrows and figures over the desktop, then on the whiteboard](docs/demo.gif)
+
 | Folder | What's inside | Status |
 | --- | --- | --- |
 | [`apple/`](apple/) | **Glasspen Meet** for macOS, **Glasspen Remote** for iPhone/iPad, and the shared Swift package **BrushKit** | Working |

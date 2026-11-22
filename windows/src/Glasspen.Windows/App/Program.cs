@@ -77,7 +77,12 @@ public sealed class SingleWindow<T>(Func<T> create) where T : Window
             _window.Closed += (_, _) => _window = null;
         }
         _window.Show();
+        if (_window.WindowState == WindowState.Minimized) _window.WindowState = WindowState.Normal;
+        // Opened from the toolbar, which never takes focus, Windows may refuse to bring the window forward
+        // and leave it behind the app being presented. Being topmost for a moment puts it in front.
+        _window.Topmost = true;
         _window.Activate();
+        _window.Topmost = false;
     }
 }
 
@@ -104,7 +109,7 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(new Forms.ToolStripMenuItem("Quit Glasspen Meet", null, (_, _) => quit()));
         menu.Opening += (_, _) =>
         {
-            draw.Text = model.DrawMode ? $"Stop Drawing ({HotKeys.DrawShortcut})" : $"Start Drawing ({HotKeys.DrawShortcut})";
+            draw.Text = model.DrawMode ? $"Stop Drawing ({model.DrawShortcut})" : $"Start Drawing ({model.DrawShortcut})";
             toolbar.Text = model.ToolbarVisible ? "Hide Toolbar" : "Show Toolbar";
         };
         _icon.ContextMenuStrip = menu;

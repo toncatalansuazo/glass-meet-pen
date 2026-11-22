@@ -79,7 +79,7 @@ public sealed class AppModel : IDrawingTarget
 
     public void ToggleDrawMode() => SetDrawMode(!DrawMode);
 
-    /// <summary>Ctrl+Alt+Shift+1…0: pick a tool and start drawing with it.</summary>
+    /// <summary>Alt+1…0: pick a tool and start drawing with it.</summary>
     public void StartDrawing(Tool tool)
     {
         SelectTool(tool);
@@ -120,6 +120,29 @@ public sealed class AppModel : IDrawingTarget
     }
 
     public event Action? HotKeysChanged;
+
+    public HotKeyCombo DrawHotKey => Settings.DrawHotKey ?? HotKeys.DefaultDraw;
+    public HotKeyCombo ClearHotKey => Settings.ClearHotKey ?? HotKeys.DefaultClear;
+    public string DrawShortcut => HotKeys.Describe(DrawHotKey);
+    public string ClearShortcut => HotKeys.Describe(ClearHotKey);
+
+    /// <summary>Set by HotKeys: shortcuts another app already owns, so they don't work here.</summary>
+    public bool DrawHotKeyTaken { get; set; }
+    public bool ClearHotKeyTaken { get; set; }
+
+    /// <summary>While the settings window records a shortcut, the global ones are off so the keys reach it.</summary>
+    public bool HotKeysSuspended { get; private set; }
+
+    public void SuspendHotKeys(bool suspended)
+    {
+        if (suspended == HotKeysSuspended) return;
+        HotKeysSuspended = suspended;
+        HotKeysChanged?.Invoke();
+    }
+
+    /// <summary>null puts the default back.</summary>
+    public void SetDrawHotKey(HotKeyCombo? combo) { Settings.DrawHotKey = combo; SaveAndNotify(); HotKeysChanged?.Invoke(); }
+    public void SetClearHotKey(HotKeyCombo? combo) { Settings.ClearHotKey = combo; SaveAndNotify(); HotKeysChanged?.Invoke(); }
 
     private void SaveAndNotify()
     {

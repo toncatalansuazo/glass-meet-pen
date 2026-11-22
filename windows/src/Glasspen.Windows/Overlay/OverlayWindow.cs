@@ -218,6 +218,7 @@ public sealed class OverlayWindow : Window
         var mods = Keyboard.Modifiers;
         if (mods.HasFlag(ModifierKeys.Control)) e.Handled = HandleControlKey(e.Key, mods.HasFlag(ModifierKeys.Shift));
         else if (e.Key == Key.Escape) { _model.SetDrawMode(false); e.Handled = true; }
+        else if (e.Key == Key.Delete && mods == ModifierKeys.None) { _model.Clear(); e.Handled = true; }
         else if ((mods & ~ModifierKeys.Shift) == ModifierKeys.None) e.Handled = HandleToolKey(e.Key);
     }
 

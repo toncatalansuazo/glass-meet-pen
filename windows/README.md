@@ -46,9 +46,9 @@ The app lives in the **tray icon** next to the clock (right-click it for the men
 
 | Keys | Action |
 | --- | --- |
-| Ctrl+Alt+Shift+D | Start or stop drawing (from any app) |
-| Ctrl+Alt+Shift+K | Clear all |
-| Ctrl+Alt+Shift+1 … 0 | Pick a tool and start drawing: pen, highlighter, line, arrow, rectangle, ellipse, phone, person, text, eraser (on/off in Settings) |
+| Alt + ` | Start or stop drawing (from any app). It's the key left of 1, whatever it shows on your keyboard (º on Spanish, ^ on German, ² on French) |
+| Alt+Delete | Clear all (just Delete while drawing) |
+| Alt+1 … 0 | Pick a tool and start drawing: pen, highlighter, line, arrow, rectangle, ellipse, phone, person, text, eraser (on/off in Settings) |
 | P H L A R O I F T E | Same tools while drawing |
 | 1–8 | Colors (while drawing) |
 | [ ] | Thinner / thicker |
@@ -56,8 +56,12 @@ The app lives in the **tray icon** next to the clock (right-click it for the men
 | Shift | Squares, circles, 45° lines, figures in proportion |
 | Esc | Stop drawing |
 
-All global shortcuts use **Ctrl+Alt+Shift** because Ctrl+Alt alone is **AltGr** on Spanish, Italian,
-German and many other keyboards, where it types @, # and brackets.
+Global shortcuts use plain **Alt**, not Ctrl+Alt, because Ctrl+Alt is **AltGr** on Spanish, Italian,
+German and many other keyboards, where it types @, # and brackets. If Alt+1 … 0 clash with an app you
+use (for example IntelliJ or Windows Terminal), turn them off in Settings.
+
+You can change the drawing and clear-all shortcuts in **Settings → Shortcuts**: click the shortcut and
+press the new keys. Settings also has the toolbar's **background opacity**.
 
 - **Toolbar:** at the bottom or on the left/right side (⇔ button). Drag it by the ⋮⋮ grip. Tools,
   colors (with ink opacity) and widths open in pop-ups.
@@ -88,8 +92,8 @@ The phone protocol is in [docs/protocol.md](../docs/protocol.md). Differences fr
 ## Checklist for the first run on Windows
 
 1. The tray icon appears, and the toolbar shows at the bottom.
-2. Ctrl+Alt+Shift+D: the pointer becomes a pen and you can draw; Esc stops and clicks reach your apps again.
-3. Ctrl+Alt+Shift+5 picks the rectangle; Shift makes a square.
+2. Alt + ` (key left of 1): the pointer becomes a pen and you can draw; Esc stops and clicks reach your apps again.
+3. Alt+5 picks the rectangle; Shift makes a square.
 4. Text tool: click, type, Enter; the text stays where you typed it.
 5. Timer: with 1 s, strokes fade; with Permanent, they stay.
 6. Whiteboard at 100%: still visible after Esc; ✕ on the toolbar removes it.

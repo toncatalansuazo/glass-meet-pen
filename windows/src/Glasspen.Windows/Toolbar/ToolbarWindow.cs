@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Threading;
 using Glasspen.Core.Model;
 using Glasspen.Windows.App;
 
@@ -23,7 +24,7 @@ public sealed class ToolbarWindow : Window
     private readonly Border _frame = new() { CornerRadius = new CornerRadius(14), Padding = new Thickness(6) };
     private StackPanel _panel = new();
     private Button _drawButton = null!, _toolButton = null!, _colorButton = null!, _widthButton = null!;
-    private Button _undoButton = null!, _redoButton = null!, _timerButton = null!, _boardButton = null!, _phoneButton = null!;
+    private Button _undoButton = null!, _redoButton = null!, _timerButton = null!, _boardButton = null!, _phoneButton = null!, _clearButton = null!;
     private Slider _boardSlider = null!;
     private ToolbarPosition _builtFor;
 
@@ -42,6 +43,9 @@ public sealed class ToolbarWindow : Window
         SizeToContent = SizeToContent.WidthAndHeight;
         Title = "Glasspen Meet toolbar";
         Content = _frame;
+        _openTimer.Tick += OnOpenTimer;
+        _closeTimer.Tick += OnCloseTimer;
+        IsVisibleChanged += (_, _) => { if (!IsVisible) ClosePopup(); };
         _frame.Effect = new DropShadowEffect { BlurRadius = 12, ShadowDepth = 2, Opacity = 0.25 };
         Build();
         SourceInitialized += (_, _) =>
@@ -82,6 +86,7 @@ public sealed class ToolbarWindow : Window
 
     private void Build()
     {
+        ClosePopup();
         _builtFor = _model.Settings.ToolbarPosition;
         _panel = new StackPanel { Orientation = Vertical ? Orientation.Vertical : Orientation.Horizontal };
         _frame.Child = _panel;
@@ -94,16 +99,16 @@ public sealed class ToolbarWindow : Window
         _drawButton = IconButton("", "", _model.ToggleDrawMode);
         Add(_drawButton);
         Divider();
-        _toolButton = IconButton("", "", () => OpenPopup(_toolButton, ToolsPopup()));
-        _colorButton = IconButton("●", "Color and ink opacity", () => OpenPopup(_colorButton, ColorsPopup()));
-        _widthButton = IconButton("", "", () => OpenPopup(_widthButton, WidthsPopup()));
+        _toolButton = HoverButton("", "", ToolsPopup);
+        _colorButton = HoverButton("●", "Color and ink opacity", ColorsPopup);
+        _widthButton = HoverButton("", "", WidthsPopup);
         Add(_toolButton); Add(_colorButton); Add(_widthButton);
         Divider();
         _undoButton = IconButton("↶", "Undo (Ctrl+Z)", () => _model.Undo());
         _redoButton = IconButton("↷", "Redo (Ctrl+Shift+Z)", () => _model.Redo());
-        var clear = IconButton("🗑", $"Clear all ({HotKeys.ClearShortcut})", () => _model.Clear());
-        _timerButton = IconButton("", "", () => OpenTimerMenu(_timerButton));
-        Add(_undoButton); Add(_redoButton); Add(clear); Add(_timerButton);
+        _clearButton = IconButton("🗑", "", () => _model.Clear());
+        _timerButton = HoverButton("", "", TimerPopup);
+        Add(_undoButton); Add(_redoButton); Add(_clearButton); Add(_timerButton);
         Divider();
         _boardButton = IconButton("⬜", "", () => _model.SetBoard(!_model.BoardEnabled));
         _boardSlider = new Slider
@@ -132,7 +137,8 @@ public sealed class ToolbarWindow : Window
         ((DropShadowEffect)_frame.Effect).Opacity = 0.25 * opacity;
 
         SetIcon(_drawButton, _model.DrawMode ? "✎" : "🖱",
-                _model.DrawMode ? $"Stop drawing ({HotKeys.DrawShortcut} or Esc)" : $"Start drawing ({HotKeys.DrawShortcut})");
+                _model.DrawMode ? $"Stop drawing ({_model.DrawShortcut} or Esc)" : $"Start drawing ({_model.DrawShortcut})");
+        _clearButton.ToolTip = $"Clear all ({_model.ClearShortcut})";
         _drawButton.Background = _model.DrawMode ? new SolidColorBrush(Color.FromRgb(0, 120, 215)) : Brushes.Transparent;
         _drawButton.Foreground = _model.DrawMode ? Brushes.White : Brushes.Black;
         var tool = _model.MouseTool.Tool;
@@ -202,39 +208,96 @@ public sealed class ToolbarWindow : Window
         return row;
     }
 
+    private Panel TimerPopup()
+    {
+        var column = new StackPanel();
+        var choices = new (string Title, double? Seconds)[] { ("Permanent", null) };
+        foreach (var (title, seconds) in choices.Concat(AppModel.FadeChoices.Select(s => ($"Fade after {s:0} s", (double?)s))))
+        {
+            var b = PopupButton(title, seconds is null ? "Strokes stay until cleared" : $"Strokes fade after {seconds:0} s",
+                                () => _model.SetFadeDelay(seconds), _model.FadeDelay == seconds);
+            b.Padding = new Thickness(10, 5, 10, 5);
+            b.HorizontalContentAlignment = HorizontalAlignment.Left;
+            column.Children.Add(b);
+        }
+        return column;
+    }
+
+    // Pop-ups open when the pointer rests on their button (or on a click) and close shortly after it
+    // leaves both the button and the pop-up, so you can move from one into the other.
+    private Popup? _popup;
+    private Button? _popupAnchor;
+    private readonly DispatcherTimer _openTimer = new() { Interval = TimeSpan.FromMilliseconds(150) };
+    private readonly DispatcherTimer _closeTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
+    private Action? _pendingOpen;
+
+    private Button HoverButton(string text, string tip, Func<Panel> content)
+    {
+        Button b = null!;
+        b = IconButton(text, tip, () => OpenPopup(b, content()));
+        b.MouseEnter += (_, _) =>
+        {
+            _closeTimer.Stop();
+            if (_popupAnchor == b && _popup?.IsOpen == true) return;
+            _pendingOpen = () => OpenPopup(b, content());
+            if (_popup?.IsOpen == true) { _pendingOpen(); _pendingOpen = null; return; } // moving between buttons: switch at once
+            _openTimer.Stop();
+            _openTimer.Start();
+        };
+        b.MouseLeave += (_, _) => { _openTimer.Stop(); _pendingOpen = null; _closeTimer.Start(); };
+        return b;
+    }
+
+    private void OnOpenTimer(object? sender, EventArgs e)
+    {
+        _openTimer.Stop();
+        _pendingOpen?.Invoke();
+        _pendingOpen = null;
+    }
+
+    private void OnCloseTimer(object? sender, EventArgs e)
+    {
+        _closeTimer.Stop();
+        if (_popup is not { IsOpen: true } popup) return;
+        var child = (UIElement)popup.Child;
+        if (child.IsMouseOver || child.IsMouseCaptureWithin || _popupAnchor?.IsMouseOver == true) return;
+        ClosePopup();
+    }
+
+    private void ClosePopup()
+    {
+        if (_popup is { } popup) popup.IsOpen = false;
+        _popup = null;
+        _popupAnchor = null;
+    }
+
     private void OpenPopup(Button anchor, Panel content)
     {
+        ClosePopup();
+        var frame = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(245, 250, 250, 252)), CornerRadius = new CornerRadius(12),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)), BorderThickness = new Thickness(1),
+            Padding = new Thickness(8), Margin = new Thickness(6), Child = content,
+            Effect = new DropShadowEffect { BlurRadius = 10, ShadowDepth = 2, Opacity = 0.25 },
+        };
+        frame.MouseEnter += (_, _) => _closeTimer.Stop();
+        frame.MouseLeave += (_, _) => _closeTimer.Start();
+        // StaysOpen: a pop-up that closes on outside clicks captures the mouse, which breaks hover tracking.
         var popup = new Popup
         {
-            PlacementTarget = anchor, StaysOpen = false, AllowsTransparency = true,
+            PlacementTarget = anchor, StaysOpen = true, AllowsTransparency = true, Child = frame,
             Placement = _model.Settings.ToolbarPosition switch
             {
                 ToolbarPosition.Left => PlacementMode.Right, ToolbarPosition.Right => PlacementMode.Left, _ => PlacementMode.Top,
             },
-            Child = new Border
-            {
-                Background = new SolidColorBrush(Color.FromArgb(245, 250, 250, 252)), CornerRadius = new CornerRadius(12),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)), BorderThickness = new Thickness(1),
-                Padding = new Thickness(8), Margin = new Thickness(6), Child = content,
-                Effect = new DropShadowEffect { BlurRadius = 10, ShadowDepth = 2, Opacity = 0.25 },
-            },
         };
-        foreach (var b in content.Children.OfType<Button>()) b.Click += (_, _) => popup.IsOpen = false;
+        foreach (var b in content.Children.OfType<Button>()) b.Click += (_, _) => ClosePopup();
         if (content.Children.OfType<UniformGrid>().FirstOrDefault() is { } inner)
-            foreach (var b in inner.Children.OfType<Button>()) b.Click += (_, _) => popup.IsOpen = false;
+            foreach (var b in inner.Children.OfType<Button>()) b.Click += (_, _) => ClosePopup();
+        _popup = popup;
+        _popupAnchor = anchor;
         popup.IsOpen = true;
-    }
-
-    private void OpenTimerMenu(Button anchor)
-    {
-        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Top };
-        menu.Items.Add(MenuItem("Permanent", _model.FadeDelay is null, () => _model.SetFadeDelay(null)));
-        foreach (var s in AppModel.FadeChoices)
-        {
-            var seconds = s;
-            menu.Items.Add(MenuItem($"{s:0} s", _model.FadeDelay == s, () => _model.SetFadeDelay(seconds)));
-        }
-        menu.IsOpen = true;
     }
 
     private void OpenPositionMenu()

@@ -6,6 +6,9 @@ namespace Glasspen.Windows.App;
 
 public enum ToolbarPosition { Bottom, Left, Right }
 
+/// <summary>A global shortcut: a Win32 virtual-key code and MOD_ALT/MOD_CONTROL/MOD_SHIFT/MOD_WIN bits.</summary>
+public sealed record HotKeyCombo(uint Vk, uint Modifiers);
+
 /// <summary>User preferences, saved as JSON in %AppData%\Glasspen Meet\settings.json.</summary>
 public sealed class AppSettings
 {
@@ -15,8 +18,12 @@ public sealed class AppSettings
     public double FadeDelaySeconds { get; set; } = 1.0;
     public double ToolbarOpacity { get; set; } = 1.0;
     public ToolbarPosition ToolbarPosition { get; set; } = ToolbarPosition.Bottom;
-    /// <summary>Ctrl+Alt+Shift+1…0 pick a tool from any app.</summary>
+    /// <summary>Alt+1…0 pick a tool from any app.</summary>
     public bool ToolHotKeysEnabled { get; set; } = true;
+    /// <summary>Start or stop drawing; null is the default, Alt + the key left of 1.</summary>
+    public HotKeyCombo? DrawHotKey { get; set; }
+    /// <summary>Clear all; null is the default, Alt+Delete.</summary>
+    public HotKeyCombo? ClearHotKey { get; set; }
 
     /// <summary>Buy Me a Coffee page; empty hides every coffee link.</summary>
     public const string BuyMeACoffeeUrl = "https://buymeacoffee.com/toncatalan";

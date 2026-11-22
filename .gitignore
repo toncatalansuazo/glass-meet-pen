@@ -13,4 +13,5 @@ xcuserdata/
 windows/**/bin/
 windows/**/obj/
 windows/**/.vs/
+windows/publish/
 *.user

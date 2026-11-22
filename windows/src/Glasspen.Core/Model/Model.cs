@@ -43,10 +43,10 @@ public static class ToolInfo
         Tool.Ellipse => 'o', Tool.Phone => 'i', Tool.Person => 'f', Tool.Text => 't', _ => 'e',
     };
 
-    /// <summary>Number key of the global Ctrl+Alt+Shift+1…0 shortcut (Ctrl+Alt alone is AltGr, which types @ # on many keyboards), in toolbar order (the 10th tool is 0).</summary>
+    /// <summary>Number key of the global Alt+1…0 shortcut, in toolbar order (the 10th tool is 0).</summary>
     public static int ShortcutDigit(this Tool t) => (Array.IndexOf(All, t) + 1) % 10;
 
-    public static string GlobalShortcut(this Tool t) => $"Ctrl+Alt+Shift+{t.ShortcutDigit()}";
+    public static string GlobalShortcut(this Tool t) => $"Alt+{t.ShortcutDigit()}";
 }
 
 public readonly record struct RgbaColor(float R, float G, float B, float A = 1)

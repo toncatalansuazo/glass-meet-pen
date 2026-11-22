@@ -12,7 +12,7 @@ internal static class Native
     public const int WS_EX_LAYERED = 0x80000;
     public const int WS_EX_NOACTIVATE = 0x8000000;
     public const int WM_HOTKEY = 0x0312;
-    public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_NOREPEAT = 0x4000;
+    public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
     public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int index);
@@ -25,6 +25,11 @@ internal static class Native
 
     [DllImport("user32.dll")]
     public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    public const uint MAPVK_VSC_TO_VK = 1, MAPVK_VK_TO_CHAR = 2;
+
+    [DllImport("user32.dll", EntryPoint = "MapVirtualKeyW")]
+    public static extern uint MapVirtualKey(uint code, uint mapType);
 
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);

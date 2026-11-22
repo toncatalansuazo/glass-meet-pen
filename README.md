@@ -11,8 +11,18 @@ On the phone, zoom into the exact spot first, then draw.
 
 ## Download
 
-Installers will be published on the [Releases](../../releases) page.
-Until then, build the Mac app from source: see [apple/README.md](apple/README.md).
+**Mac** (macOS 14 or later), with [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask toncatalansuazo/tap/glasspen-meet
+```
+
+Or download the zip from [Releases](../../releases) and drag the app into Applications.
+The app is not notarized by Apple yet: the first time you open it, go to
+**System Settings → Privacy & Security** and click **Open Anyway**.
+
+**iPhone/iPad** (Glasspen Remote) and **Windows**: build from source, see [apple/README.md](apple/README.md)
+and [windows/README.md](windows/README.md).
 
 ## Support
 
